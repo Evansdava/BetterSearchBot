@@ -26,14 +26,13 @@ impl EventHandler for Handler {
         let prefix = iter.next().unwrap();
         let command = iter.next().unwrap();
         // let _content = iter.next().unwrap();
-        println!("{} {}", prefix, command);
+        // println!("{} {}", prefix, command);
         if prefix == CMD_PREFIX {
             let help_msg = "Command list: \n\
-                        \t`ping`: Prints \"pong\"\n\
                         \t`allbut`: Displays all messages that don't match the input.\n\t\tExample: `/s allbut Melee HD`\n\
                         \t`and`: Displays all messages that include every comma-separated term.\n\t\tExample: `/s and dogs, cats, pigs and bats`\n\
-                        \t`exact`: Displays all messages that include the exact term entered.\n\t\tExample: `/s exact Specifically this\n\
-                        \t`or`: Displays all messages that include one or more of the comma-separated terms.\n\t\tExample: `/s or cats, dogs, pigs, bats";
+                        \t`exact`: Displays all messages that include the exact term entered.\n\t\tExample: `/s exact Specifically this`\n\
+                        \t`or`: Displays all messages that include one or more of the comma-separated terms.\n\t\tExample: `/s or cats, dogs, pigs, bats`";
             match command {
                 "ping" => send_message(&ctx, msg.channel_id, "Pong!").await,
 
@@ -63,7 +62,7 @@ impl EventHandler for Handler {
     }
 }
 
-
+// Helper function to send safer messages
 async fn send_message(ctx: &Context, channel: ChannelId, message: &str) {
     // Sending a message can fail, due to a network error, an
     // authentication error, or lack of permissions to post in the
@@ -74,6 +73,7 @@ async fn send_message(ctx: &Context, channel: ChannelId, message: &str) {
     }
 }
 
+// Display results in an embedded message (or messages, if needed)
 async fn show_results(ctx: &Context, channel: ChannelId, results: Vec<Message>) {
     let mut result_fields: Vec<(String, String, bool)> = Vec::new();
 
@@ -149,6 +149,7 @@ async fn exact_match(ctx: &Context, msg: Message) -> Vec<Message> {
     }).await
 }
 
+// Returns messages that contain two exact terms
 async fn and_match(ctx: &Context, msg: Message) -> Vec<Message> {
     return search(ctx, msg, |message, search| {
         let searches: Vec<&str> = search.split_terminator(",").collect();
@@ -164,6 +165,7 @@ async fn and_match(ctx: &Context, msg: Message) -> Vec<Message> {
     }).await
 }
 
+// Returns messages that contain one or more specified terms
 async fn or_match(ctx: &Context, msg: Message) -> Vec<Message> {
     return search(ctx, msg, |message, search| {
         let searches: Vec<&str> = search.split_terminator(",").collect();
