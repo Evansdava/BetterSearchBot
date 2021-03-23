@@ -30,11 +30,15 @@ impl EventHandler for Handler {
         if prefix == CMD_PREFIX {
             let help_msg = "Command list: \n\
                         \t`ping`: Prints \"pong\"\n\
-                        \t`allbut`: Displays all messages that don't match the input.\n\t\tExample: `/s allbut Melee HD`";
+                        \t`allbut`: Displays all messages that don't match the input.\n\t\tExample: `/s allbut Melee HD`\n\
+                        \t`and`: Displays all messages that include every comma-separated term.\n\t\tExample: `/s and dogs, cats, pigs and bats`\n\
+                        \t`exact`: Displays all messages that include the exact term entered.\n\t\tExample: `/s exact Specifically this";
             match command {
                 "ping" => send_message(&ctx, msg.channel_id, "Pong!").await,
 
                 "allbut" => show_results(&ctx, msg.channel_id, allbut(&ctx, msg).await).await,
+
+                "and" => show_results(&ctx, msg.channel_id, and_match(&ctx, msg).await).await,
 
                 "exact" => show_results(&ctx, msg.channel_id, exact_match(&ctx, msg).await).await,
 
@@ -130,6 +134,21 @@ async fn allbut(ctx: &Context, msg: Message) -> Vec<Message> {
 async fn exact_match(ctx: &Context, msg: Message) -> Vec<Message> {
     return search(ctx, msg, |message, search| {
         message.contains(search)
+    }).await
+}
+
+async fn and_match(ctx: &Context, msg: Message) -> Vec<Message> {
+    return search(ctx, msg, |message, search| {
+        let searches: Vec<&str> = search.split_terminator(",").collect();
+        let mut contains_all = true;
+
+        for term in searches {
+            if !message.contains(term) {
+                contains_all = false;
+            }
+        }
+
+        contains_all
     }).await
 }
 
