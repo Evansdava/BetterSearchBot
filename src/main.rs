@@ -36,6 +36,8 @@ impl EventHandler for Handler {
 
                 "allbut" => show_results(&ctx, msg.channel_id, allbut(&ctx, msg).await).await,
 
+                "exact" => show_results(&ctx, msg.channel_id, exact_match(&ctx, msg).await).await,
+
                 "help" => send_message(&ctx, msg.channel_id, help_msg).await,
 
                 _ => send_message(&ctx, msg.channel_id, "Command not recognized. Try `/s help` instead.").await,
@@ -92,9 +94,8 @@ async fn show_results(ctx: &Context, channel: ChannelId, results: Vec<Message>) 
     }
 }
 
-
-// Searches all messages in the given channel and returns any that don't exactly match the result 
-async fn allbut(ctx: &Context, msg: Message) -> Vec<Message> {
+// Base search function that loops through messages and checks criteria
+async fn search<F>(ctx: &Context, msg: Message, criteria: F) -> Vec<Message> where F: Fn(String, &str) -> bool {
     let msg_content: Vec<&str> = msg.content.splitn(3, " ").collect();
     let search = msg_content[2];
     let mut messages = get_100_messages(&ctx, msg.channel_id, msg.id).await;
@@ -102,10 +103,11 @@ async fn allbut(ctx: &Context, msg: Message) -> Vec<Message> {
     let mut results: Vec<Message> = Vec::new();
 
     while messages.len() > 0 {
-        println!("{:?}", messages);
+        // println!("{:?}", messages);
         let message = messages.pop().unwrap();
+        let content = message.content.to_owned();
         let message_id = message.id;
-        if message.content != search {
+        if criteria(content, search) {
             results.push(message)
         }
         if messages.len() == 0 {
@@ -114,8 +116,21 @@ async fn allbut(ctx: &Context, msg: Message) -> Vec<Message> {
         }
     }
 
-    println!("{:?}", results);
     return results
+}
+
+// Searches all messages in the given channel and returns any that don't exactly match the result 
+async fn allbut(ctx: &Context, msg: Message) -> Vec<Message> {
+    return search(ctx, msg, |message, search| {
+        message != search
+    }).await
+}
+
+// Returns messages that contain an exact match for the input
+async fn exact_match(ctx: &Context, msg: Message) -> Vec<Message> {
+    return search(ctx, msg, |message, search| {
+        message.contains(search)
+    }).await
 }
 
 // Returns an array of 100 messages and the last message's id
